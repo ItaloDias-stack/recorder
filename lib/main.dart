@@ -45,7 +45,7 @@ class _HomeState extends State<Home> {
               itemCount: files.length,
               itemBuilder: (context, index) {
                 return AudioPostComponent(
-                  file: files[index],
+                  path: files[index],
                 );
               },
             ),

@@ -1,156 +1,102 @@
-import 'package:audio_waveforms/audio_waveforms.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 
 class AudioPostComponent extends StatefulWidget {
-  final String file;
+  final String path;
   final bool showRemoveButton;
   final Function()? onRemove;
 
   const AudioPostComponent({
     Key? key,
     this.showRemoveButton = true,
-    required this.file,
+    required this.path,
     this.onRemove,
   }) : super(key: key);
 
   @override
-  _AudioPostComponentState createState() => _AudioPostComponentState();
+  AudioPostComponentState createState() => AudioPostComponentState();
 }
 
-class _AudioPostComponentState extends State<AudioPostComponent> {
-  bool isLoading = false;
-  PlayerController playerController = PlayerController();
+class AudioPostComponentState extends State<AudioPostComponent> {
+  AudioPlayer player = AudioPlayer();
+  bool isLoading = true;
   bool isPlaying = false;
   bool isPaused = false;
-  Duration position = Duration();
-  Duration audioDuration = Duration();
+  Duration position = const Duration();
+  Duration audioDuration = const Duration();
   List<double> waveformdata = [];
 
   play() async {
-    if (mounted) {
-      if (mounted) {
-        setState(() {
-          isLoading = true;
-        });
-      }
-
-      await playerController.startPlayer(
-        forceRefresh: true,
-        finishMode: FinishMode.pause,
-      );
-      Future.delayed(const Duration(milliseconds: 1500)).then((value) {
-        if (mounted) {
-          setState(() {
-            isLoading = false;
-          });
-        }
-      });
-    }
+    await player.play(DeviceFileSource(widget.path));
   }
 
   pause() async {
-    if (mounted) {
-      await playerController.pausePlayer();
-    }
+    await player.pause();
   }
 
   resume() async {
-    if (mounted) {
-      await playerController.startPlayer();
+    await player.resume();
+  }
+
+  playPause() {
+    if (isPlaying) {
+      pause();
+    } else if (isPaused) {
+      resume();
+    } else {
+      play();
     }
   }
 
-  seekAudio(Duration seekDuration) async {
-    if (mounted) {
-      await playerController.seekTo(seekDuration.inSeconds);
-    }
+  Future getAudioDuration() async {
+    audioDuration = await player.getDuration() ?? Duration.zero;
   }
 
-  audioAction() {
-    if (mounted) {
-      if (isPlaying) {
-        pause();
-      } else if (isPaused) {
-        resume();
-      } else {
-        play();
-      }
-    }
-  }
-
-  getAudioDuration() {
-    if (mounted) {
-      playerController.onCurrentDurationChanged.listen((event) {
-        if (mounted) {
-          setState(
-            () => audioDuration = Duration(milliseconds: event),
-          );
-        }
-      });
-    }
-  }
-
-  getAudioPosition() {
-    if (mounted) {
-      playerController.onCurrentDurationChanged.listen((event) {
-        if (mounted) {
-          setState(
-            () => position = Duration(milliseconds: event),
-          );
-        }
-      });
-    }
+  listenToAudioPosition() {
+    player.onPositionChanged.listen((position) {
+      setState(
+        () => this.position = position,
+      );
+    });
   }
 
   listenToPlayerState() {
-    if (mounted) {
-      playerController.onPlayerStateChanged.listen((event) {
-        if (event == PlayerState.playing) {
-          if (mounted) {
-            setState(() {
-              isPlaying = true;
-              isPaused = false;
-            });
-          }
-        } else if (event == PlayerState.paused) {
-          if (mounted) {
-            setState(() {
-              isPaused = true;
-              isPlaying = false;
-            });
-          }
-        } else {
-          if (mounted) {
-            setState(() {
-              isPlaying = false;
-              isPaused = false;
-            });
-          }
-        }
-      });
-    }
+    player.onPlayerStateChanged.listen((event) {
+      if (event == PlayerState.playing) {
+        setState(() {
+          isPlaying = true;
+          isPaused = false;
+        });
+      } else if (event == PlayerState.paused) {
+        setState(() {
+          isPaused = true;
+          isPlaying = false;
+        });
+      } else {
+        setState(() {
+          isPlaying = false;
+          isPaused = false;
+        });
+      }
+    });
   }
 
   @override
   void initState() {
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
-      waveformdata = await playerController.extractWaveformData(
-        path: widget.file,
-        noOfSamples: 100,
-      );
-      setState(() {});
-      await playerController.preparePlayer(
-        path: widget.file,
-        shouldExtractWaveform: true,
-        volume: 1.0,
-      );
+      await setAudioUrl();
+      listenToAudioPosition();
       listenToPlayerState();
-      getAudioDuration();
-      getAudioPosition();
+      await getAudioDuration();
+      setState(() {
+        isLoading = false;
+      });
     });
 
     super.initState();
   }
+
+  Future<void> setAudioUrl() => player.setSourceUrl(widget.path);
 
   @override
   void dispose() {
@@ -175,7 +121,6 @@ class _AudioPostComponentState extends State<AudioPostComponent> {
           if (widget.showRemoveButton)
             GestureDetector(
               onTap: () {
-                //if (widget.showRemoveButton) widget.onRemove!();
                 setState(() {});
               },
               child: Container(
@@ -186,7 +131,7 @@ class _AudioPostComponentState extends State<AudioPostComponent> {
                   borderRadius: BorderRadius.circular(50),
                   color: Colors.grey.withOpacity(.5),
                 ),
-                child: Icon(Icons.close, size: 20),
+                child: const Icon(Icons.close, size: 20),
               ),
             ),
           if (widget.showRemoveButton)
@@ -198,27 +143,30 @@ class _AudioPostComponentState extends State<AudioPostComponent> {
             ),
           GestureDetector(
             onTap: () {
-              audioAction();
-              //await audioPlayer.seek(Duration(milliseconds: 1200));
+              playPause();
             },
-            child: isPlaying ? Icon(Icons.pause) : Icon(Icons.play_arrow),
+            child: isPlaying
+                ? const Icon(Icons.pause)
+                : const Icon(Icons.play_arrow),
           ),
           Expanded(
-            child: AudioFileWaveforms(
-              size: Size(250, 51),
-              playerController: playerController,
-              waveformData: waveformdata,
-              //enableSeekGesture: true,
-
-              waveformType: WaveformType.fitWidth, //WaveformType.long,
-              playerWaveStyle: const PlayerWaveStyle(
-                scaleFactor: 100,
-                fixedWaveColor: Colors.red,
-                liveWaveColor: Colors.blue,
-                waveCap: StrokeCap.round,
-                seekLineColor: Colors.transparent,
-              ),
-            ),
+            child: isLoading
+                ? const LinearProgressIndicator(
+                    color: Colors.grey,
+                    backgroundColor: Colors.transparent,
+                  )
+                : Slider(
+                    activeColor: Colors.purple,
+                    inactiveColor: Colors.grey,
+                    onChanged: (value) {
+                      player.seek(
+                        Duration(
+                          seconds: (audioDuration.inSeconds * value).toInt(),
+                        ),
+                      );
+                    },
+                    value: position.inSeconds / audioDuration.inSeconds,
+                  ),
           ),
         ],
       ),
