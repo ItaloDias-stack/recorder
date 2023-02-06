@@ -5,50 +5,18 @@ class AudioPostComponent extends StatefulWidget {
   final String file;
   final bool showRemoveButton;
   final Function()? onRemove;
-  const AudioPostComponent(
-      {Key? key,
-      this.showRemoveButton = true,
-      required this.file,
-      this.onRemove})
-      : super(key: key);
+
+  const AudioPostComponent({
+    Key? key,
+    this.showRemoveButton = true,
+    required this.file,
+    this.onRemove,
+  }) : super(key: key);
 
   @override
   _AudioPostComponentState createState() => _AudioPostComponentState();
 }
-// AudioFileWaveforms(
-//                             size: Size(250, 50),
-//                             playerController: playerController,
-//                             waveformData: waveformdata,
-//                             enableSeekGesture: true,
-//                             waveformType: WaveformType.long,
-//                             playerWaveStyle: const PlayerWaveStyle(
-//                               scaleFactor: 100,
-//                               fixedWaveColor: Colors.red,
-//                               liveWaveColor: Colors.blue,
-//                               waveCap: StrokeCap.round,
-//                             ),
-//                           )
 
-// Row(
-//                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//                             children: [
-//                               GestureDetector(
-//                                 onTap: () {
-//                                   audioAction();
-//                                   //await audioPlayer.seek(Duration(milliseconds: 1200));
-//                                 },
-//                                 child: isPlaying && (position.inSeconds == 0)
-//                                     ? Center(
-//                                         child: CircularProgressIndicator(
-//                                           color: Colors.brown,
-//                                         ),
-//                                       )
-//                                     : isPlaying
-//                                         ? Icon(Icons.pause)
-//                                         : Icon(Icons.play_arrow),
-//                               ),
-//                             ],
-//                           )
 class _AudioPostComponentState extends State<AudioPostComponent> {
   bool isLoading = false;
   PlayerController playerController = PlayerController();
@@ -57,6 +25,7 @@ class _AudioPostComponentState extends State<AudioPostComponent> {
   Duration position = Duration();
   Duration audioDuration = Duration();
   List<double> waveformdata = [];
+
   play() async {
     if (mounted) {
       if (mounted) {
@@ -65,8 +34,11 @@ class _AudioPostComponentState extends State<AudioPostComponent> {
         });
       }
 
-      await playerController.startPlayer(forceRefresh: true);
-      Future.delayed(Duration(milliseconds: 1500)).then((value) {
+      await playerController.startPlayer(
+        forceRefresh: true,
+        finishMode: FinishMode.pause,
+      );
+      Future.delayed(const Duration(milliseconds: 1500)).then((value) {
         if (mounted) {
           setState(() {
             isLoading = false;
@@ -78,8 +50,7 @@ class _AudioPostComponentState extends State<AudioPostComponent> {
 
   pause() async {
     if (mounted) {
-      //await audioPlayer.pause();
-      await playerController.stopPlayer();
+      await playerController.pausePlayer();
     }
   }
 

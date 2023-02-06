@@ -1,11 +1,9 @@
-import 'dart:io';
+import 'package:audio_waveforms/audio_waveforms.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:permission_handler/permission_handler.dart';
-//import 'package:just_audio/just_audio.dart';
 import 'package:recorder/audio_player.dart';
 import 'package:uuid/uuid.dart';
-import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 
 void main() {
   runApp(const MyApp());
@@ -35,43 +33,21 @@ class AudioRecorder extends StatefulWidget {
 }
 
 class _AudioRecorderState extends State<AudioRecorder> {
-  final recorder = FlutterSoundRecorder();
-
+  RecorderController recorderController = RecorderController();
   List<String> files = [];
-  @override
-  void initState() {
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
-      await initRecorder();
-    });
-    super.initState();
-  }
 
   @override
   void dispose() {
-    recorder.stopRecorder();
+    recorderController.dispose();
     super.dispose();
   }
 
-  Future initRecorder() async {
-    await Permission.microphone.request();
-    final status = await Permission.microphone.status;
-    if (status == PermissionStatus.granted ||
-        status == PermissionStatus.limited) {
-      await recorder.openRecorder();
-      recorder.setSubscriptionDuration(
-        const Duration(milliseconds: 500),
-      );
-    } else {
-      throw "Permission not granted";
-    }
-  }
-
   Future<String> stop() async {
-    return await recorder.stopRecorder() ?? "";
+    return await recorderController.stop() ?? "";
   }
 
   Future start() async {
-    await recorder.startRecorder(toFile: const Uuid().v4());
+    await recorderController.record();
   }
 
   @override
@@ -190,22 +166,22 @@ class _AudioRecorderState extends State<AudioRecorder> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Container(),
-                if (recorder.isRecording)
-                  StreamBuilder(
-                    stream: recorder.onProgress,
-                    builder: (context, snapshot) {
-                      final duration = snapshot.hasData
-                          ? snapshot.data!.duration
-                          : Duration.zero;
-                      String twoDigits(int n) => n < 10 ? "0$n" : n.toString();
-                      final twoDigitsSeconds =
-                          twoDigits(duration.inSeconds.remainder(60));
-                      final twoDigitsMinutes =
-                          twoDigits(duration.inMinutes.remainder(60));
-                      return Text("$twoDigitsMinutes:$twoDigitsSeconds");
-                    },
-                  ),
-                recorder.isRecording
+                // if (recorderController.isRecording)
+                //   StreamBuilder(
+                //     stream: recorderController.,
+                //     builder: (context, snapshot) {
+                //       final duration = snapshot.hasData
+                //           ? snapshot.data!.duration
+                //           : Duration.zero;
+                //       String twoDigits(int n) => n < 10 ? "0$n" : n.toString();
+                //       final twoDigitsSeconds =
+                //           twoDigits(duration.inSeconds.remainder(60));
+                //       final twoDigitsMinutes =
+                //           twoDigits(duration.inMinutes.remainder(60));
+                //       return Text("$twoDigitsMinutes:$twoDigitsSeconds");
+                //     },
+                //   ),
+                recorderController.isRecording
                     ? Row(
                         children: [
                           Text(
